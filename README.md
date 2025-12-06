@@ -20,6 +20,7 @@ tree ./
 │   ├── __init__.py
 │   ├── agent.py
 │   ├── flux.py
+│   ├── run_agent.py
 │   └── whisper.py
 ├── llm-unified-model
 │   ├── __init__.py
@@ -36,6 +37,8 @@ tree ./
 │   │   └── img5.jpg
 │   └── sample_audio.wav
 └── requirements.txt
+
+6 directories, 23 files
 ```
 
 ## Dataset
@@ -53,11 +56,14 @@ LLM acts as an **agent** that decides when to call external tools
 ### Architecture LLM + Tools
 
 ```mathematica
-User → LLM → Tool Decision  
-      → Whisper / Flux → Result → LLM → Final Output
+User Input → LLM → (Tool Decision)
+              ↳ Whisper (if audio request)
+              ↳ Flux (if image generation request)
+              ↳ LLM direct answer (else)
+→ Final Output to User
 ```
 
-Code Located In - `./llm_tools/`
+Code Located In - `./llm-tools/`
 
 ## Module 2 — LLM + Adapter (Encoder → Adapter → Decoder)
 
@@ -73,7 +79,7 @@ This module uses a **vision encoder** + **adapter MLP** + **decoder LLM**
 Image → Vision Encoder → Adapter → LLM → Text
 ```
 
-Code Located In - `./llm_adapter/`
+Code Located In - `./llm-adapter/`
 
 ## Module 3 — Unified Multimodal Model
 
@@ -91,7 +97,7 @@ Text → Tokenizer
 Concat → LLM → Output
 ```
 
-Code Located In - `./module3_llm-unified-model/`
+Code Located In - `./llm-unified-model/`
 
 ## Installation
 
@@ -112,9 +118,36 @@ numpy
 
 ## Running Modules
 
-- Run Module 1 (LLM + Tools) `python llm_tools/demo_module1.py`
-- Run Module 2 (Adapter Fusion) `python llm_adapter/train_adapter.py`
-- Run Module 3 (Unified Model) `python llm_unified_model/train_unified.py`
+- Run Module 1 (LLM + Tools) `python llm-tools/run_agent.py`
+- Run Module 2 (Adapter Fusion) `python llm-adapter/train_adapter.py`
+- Run Module 3 (Unified Model) `python llm-unified-model/train_unified_model.py`
+
+Environment variables (image/backends)
+
+- `IMAGE_BACKEND`: choose which image backend the agent will call. Supported values:
+    - `flux` (default) — calls `llm-tools/flux.py` which uses OpenAI Images endpoint (requires `FLUX_API_KEY`).
+    - `stable-diffusion` / `sd` — uses a local placeholder image generator in `llm-tools/stable-diffusion.py`.
+    - `nano-banana` / `nano` — calls `llm-tools/nano_banana.py` which can POST to a configured endpoint or use a placeholder.
+- `FLUX_API_KEY`: Bearer API key for the Flux/OpenAI images endpoint (used by `llm-tools/flux.py`).
+- `FLUX_MODEL`: optional; override the default image model used by Flux (defaults to `gpt-image-1`).
+- `NANO_BANANA_ENDPOINT`: (optional) URL for a Nano-Banana image-generation endpoint that accepts `{"prompt":...}` and returns a base64 image.
+- `NANO_BANANA_API_KEY`: (optional) Bearer token for the Nano-Banana endpoint.
+
+Output
+
+- Generated images (placeholder or downloaded) are saved to the project `output/` directory by default, e.g. `./output/sd_image.png` or `./output/nano_image.png`.
+
+Examples
+
+- Run the demo using the Nano-Banana placeholder backend:
+    `IMAGE_BACKEND=nano-banana python llm-tools/run_agent.py`
+- Run the demo using the stable-diffusion placeholder backend:
+    `IMAGE_BACKEND=stable-diffusion python llm-tools/run_agent.py`
+- Default (Flux) backend; ensure `FLUX_API_KEY` is exported first:
+    ```bash
+    export FLUX_API_KEY="sk-..."
+    python llm-tools/run_agent.py
+    ```
 
 ## Examples Folder
 
