@@ -1,0 +1,8 @@
+torch
+transformers
+datasets
+tqdm
+Pillow
+requests
+soundfile
+numpy
