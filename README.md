@@ -149,6 +149,50 @@ Examples
     python llm-tools/run_agent.py
     ```
 
+Dataset downsampling utility
+
+If you have a large image dataset and want a quick subset for experiments, use the included script `scripts/downsample_dataset.py`.
+
+Example: create a 1000-image subset using symlinks (fast):
+
+```bash
+python scripts/downsample_dataset.py --src multimodal-dataset --dst multimodal-dataset-subset --num 1000 --symlink
+```
+
+The script will copy or symlink selected images into `--dst/images/` and will filter `captions.json` if present.
+
+Flickr8k-specific downsampling
+
+If you're working with the Flickr8k CSV-style captions file, there's a convenience script that samples by unique image id and preserves all caption lines for each selected image:
+
+```bash
+python scripts/downsample_flickr8k.py --src multimodal-dataset/flickr8k \
+    --dst multimodal-dataset/flickr8k-subset --num 1000 --symlink
+```
+
+This will create `multimodal-dataset/flickr8k-subset/images/` (symlinks by default) and `multimodal-dataset/flickr8k-subset/captions.txt` containing only caption lines for the selected images.
+
+Environment and `.env`
+
+You can point the adapter/demo scripts to a different dataset using the `MM_DATASET` environment variable. It accepts either:
+- a path to a dataset directory containing `captions.txt` (e.g. `./multimodal-dataset/flickr8k-subset`), or
+- a known name such as `flickr8k` or `flickr8k-subset` (the repo-level demo will map these to the appropriate folder).
+
+To make this persistent for your shell session, create a repo-root `.env` file with a single line (do not commit secrets):
+
+```bash
+# in the repo root
+echo "MM_DATASET=multimodal-dataset/flickr8k-subset" > .env
+```
+
+The code includes a tiny `.env` loader (no external dependencies) that will read `MM_DATASET` from that file at runtime.
+
+Security note — DO NOT COMMIT SECRETS
+
+The repository's `.gitignore` already ignores `.env`. Keep this pattern: never commit API keys or secrets into the repo. Instead:
+- export keys in your shell (e.g. `export FLUX_API_KEY=...`) or
+- store them locally in `.env` and ensure `.env` stays out of version control.
+
 ## Examples Folder
 
 Contains

@@ -1,0 +1,22 @@
+[
+    {
+        "image_path": "/Users/sayanchatterjee/Documents/codebase/PHD/multimodal-llm/multimodal-dataset/images/img1.png",
+        "caption": ""
+    },
+    {
+        "image_path": "/Users/sayanchatterjee/Documents/codebase/PHD/multimodal-llm/multimodal-dataset/images/img2.png",
+        "caption": ""
+    },
+    {
+        "image_path": "/Users/sayanchatterjee/Documents/codebase/PHD/multimodal-llm/multimodal-dataset/images/img3.png",
+        "caption": ""
+    },
+    {
+        "image_path": "/Users/sayanchatterjee/Documents/codebase/PHD/multimodal-llm/multimodal-dataset/images/img4.png",
+        "caption": ""
+    },
+    {
+        "image_path": "/Users/sayanchatterjee/Documents/codebase/PHD/multimodal-llm/multimodal-dataset/images/img5.png",
+        "caption": ""
+    }
+]

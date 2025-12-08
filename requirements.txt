@@ -10,3 +10,5 @@ diffusers
 accelerate 
 safetensors
 gtts
+matplotlib
+torchvision

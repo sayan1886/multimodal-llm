@@ -1,22 +1,22 @@
 [
     {
-        "image_path": "images/img1.jpg",
+        "image_path": "./multimodal-dataset/images/img1.jpg",
         "caption": "An image with dominant color RGB (255, 0, 0)."
     },
     {
-        "image_path": "images/img2.jpg",
+        "image_path": "./multimodal-dataset/images/img2.jpg",
         "caption": "An image with dominant color RGB (0, 255, 0)."
     },
     {
-        "image_path": "images/img3.jpg",
+        "image_path": "./multimodal-dataset/images/img3.jpg",
         "caption": "An image with dominant color RGB (0, 0, 255)."
     },
     {
-        "image_path": "images/img4.jpg",
+        "image_path": "./multimodal-dataset/images/img4.jpg",
         "caption": "An image with dominant color RGB (255, 255, 0)."
     },
     {
-        "image_path": "images/img5.jpg",
+        "image_path": "./multimodal-dataset/images/img5.jpg",
         "caption": "An image with dominant color RGB (255, 0, 255)."
     }
 ]
