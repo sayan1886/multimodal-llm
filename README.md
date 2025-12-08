@@ -119,8 +119,8 @@ numpy
 ## Running Modules
 
 - Run Module 1 (LLM + Tools) `python llm-tools/run_agent.py`
-- Run Module 2 (Adapter Fusion) `python llm-adapter/train_adapter.py`
-- Run Module 3 (Unified Model) `python llm-unified-model/train_unified_model.py`
+- Run Module 2 (Adapter Fusion) `python llm-adapter/run_adapter.py`
+- Run Module 3 (Unified Model) `python llm-unified-model/run_unified_model.py`
 
 Environment variables (image/backends)
 
