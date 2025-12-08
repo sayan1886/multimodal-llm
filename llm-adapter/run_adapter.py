@@ -58,7 +58,11 @@ def load_json_dataset(json_path="./multimodal-dataset/captions.json"):
 # -------------------------------
 # Select dataset based on env var
 # -------------------------------
-def load_dataset():
+def load_dataset(type=None):    
+    if type == "test":
+        print("Loading test dataset")
+        return load_json_dataset("./multimodal-dataset/captions.json"), "json"
+    
     raw = os.environ.get("MM_DATASET", "")
     ds = raw.strip()
 
@@ -82,10 +86,10 @@ def load_dataset():
             else:
                 csv_path = Path("./multimodal-dataset/flickr8k/captions.txt")
             if csv_path.exists():
-                print(f"→ Loading Flickr8k CSV dataset from {csv_path.parent}")
+                print(f"Loading Flickr8k CSV dataset from {csv_path.parent}")
                 return load_flickr8k_captions(str(csv_path)), "flickr"
 
-    print("→ Loading custom JSON dataset (default)")
+    print("Loading custom JSON dataset (default)")
     return load_json_dataset(), "json"
 
 # -------------------------------
@@ -102,25 +106,40 @@ def preprocess_image(img_path, image_size=224):
 # -------------------------------
 # Inference
 # -------------------------------
-def generate_captions(model, examples, max_gen_len=20):
+def generate_captions(model, examples, output_dir="output", max_gen_len=20):
+    """
+    Generate captions for a list of images, save results to JSON, and display images.
+    
+    Args:
+        model: your AdapterVisionLLM model
+        examples: list of dicts, each containing "image_path"
+        output_dir: directory to save JSON results
+        max_gen_len: max number of tokens to generate
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
     if tokenizer.pad_token_id is None:
         tokenizer.add_special_tokens({"pad_token": "[PAD]"})
+    
     bos = tokenizer.bos_token_id
     eos = tokenizer.eos_token_id
-
+    
+    device = next(model.parameters()).device
     model.eval()
+    
+    results = []
 
-    for ex in examples[:10]:  # limit for demo
+    for ex in examples[:10]:  # limit to 10 for demo
         img_path = ex["image_path"]
         if not os.path.exists(img_path):
             print(f"Missing image: {img_path}")
             continue
-
+        
         pixel_values = preprocess_image(img_path).to(device)
         input_ids = torch.tensor([[bos]], device=device)
         generated = input_ids.clone()
-
+        
         for _ in range(max_gen_len):
             with torch.no_grad():
                 out = model(
@@ -130,21 +149,32 @@ def generate_captions(model, examples, max_gen_len=20):
                 )
                 logits = out.logits
                 next_token = torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
-
+            
             generated = torch.cat([generated, next_token], dim=-1)
-
+            
             if next_token.item() == eos:
                 break
-
+        
         caption = tokenizer.decode(generated[0], skip_special_tokens=True)
-        print(f"\nImage: {img_path}\nGenerated: {caption}")
-
-        # ---- Show image with caption ----
+        print(f"Image: {img_path}\nGenerated: {caption}")
+        
+        # Save results for JSON
+        results.append({"image_path": img_path, "caption": caption})
+        
+        # Display image with caption
         img = Image.open(img_path)
         plt.imshow(img)
         plt.axis("off")
         plt.title(caption)
         plt.show()
+        plt.close()
+    
+    # Write all captions to JSON file
+    json_path = os.path.join(output_dir, "captions_generated.json")
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, ensure_ascii=False, indent=4)
+    
+    print(f"\nSaved {len(results)} captions to {json_path}")
 
 # -------------------------------
 # MAIN
@@ -162,12 +192,16 @@ if __name__ == "__main__":
             json.dump(examples, f, indent=4)
 
     print("\n=== Training Adapter ===\n")
+    checkpoint_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model_checkpoints")
+    print(f"Checkpoint directory: {checkpoint_dir}")
     model = train(
         data_json=train_file,
-        batch_size=4,
-        num_epochs=30,
-        lr=1e-5
+        batch_size=32,
+        num_epochs=1,
+        lr=1e-5,
+        checkpoint_dir=checkpoint_dir
     )
 
     print("\n=== Generating Captions ===\n")
-    generate_captions(model, examples)
+    test_examples, _ = load_dataset(type="test")
+    generate_captions(model, test_examples)

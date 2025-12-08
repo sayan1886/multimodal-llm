@@ -10,22 +10,26 @@ from transformers import get_linear_schedule_with_warmup
 from torch.optim import AdamW
 from tqdm import tqdm
 
+
 def load_caption_data(json_path: str):
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         data = json.load(f)
     return data
+
 
 def collate_fn(batch):
     pixel_values = torch.stack([item["pixel_values"] for item in batch], dim=0)
     input_ids = torch.stack([item["input_ids"] for item in batch], dim=0)
     attention_mask = torch.stack([item["attention_mask"] for item in batch], dim=0)
     labels = torch.stack([item["labels"] for item in batch], dim=0)
+
     return {
         "pixel_values": pixel_values,
         "input_ids": input_ids,
         "attention_mask": attention_mask,
         "labels": labels,
     }
+
 
 def train(
     data_json: str,
@@ -34,6 +38,7 @@ def train(
     lr: float = 5e-5,
     patience: int = 3,
     device: str = None,
+    checkpoint_dir : str = None,
 ):
     # ----------------------------
     # Device selection (MPS, CUDA)
@@ -50,23 +55,27 @@ def train(
     # ----------------------------
     examples = load_caption_data(data_json)
     dataset = ImageCaptionDataset(examples)
-    dataloader = DataLoader(dataset,
-                            batch_size=batch_size,
-                            shuffle=True,
-                            collate_fn=collate_fn)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn
+    )
 
     # ----------------------------
-    # Model
+    # Model + resume from checkpoint
     # ----------------------------
     model = AdapterVisionLLM().to(device)
 
-    ckpt_path = "model_checkpoints/adapter_vision_llm.pt"
-    os.makedirs("model_checkpoints", exist_ok=True)
-
-    # Resume if checkpoint exists
+    ckpt_path = os.path.join(checkpoint_dir, "adapter_vision_llm.pt")
+    print(f"Checkpoint path: {ckpt_path}")
+    
     if os.path.exists(ckpt_path):
         print(f"Loading checkpoint from {ckpt_path}")
-        model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        # model.load_state_dict(torch.load(ckpt_path, map_location=device))
+        state = torch.load(ckpt_path, map_location=device)
+        missing, unexpected = model.load_state_dict(state, strict=False)
+        print("Missing keys:", missing)
+        print("Unexpected keys:", unexpected)
+    else:
+        print("No checkpoint found. Training from scratch.")    
 
     optimizer = AdamW(model.parameters(), lr=lr)
 
@@ -77,12 +86,12 @@ def train(
         optimizer, warmup_steps, total_steps
     )
 
-    # ----------------------------
-    # Training loop with early stop
-    # ----------------------------
     best_loss = float("inf")
     wait = 0
 
+    # ----------------------------
+    # Training loop
+    # ----------------------------
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
@@ -109,7 +118,7 @@ def train(
 
             loss.backward()
             
-                        # Gradient clipping (prevents exploding gradients)
+            # Gradient clipping (prevents exploding gradients)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
 
             optimizer.step()
@@ -121,23 +130,18 @@ def train(
         avg_loss = total_loss / len(dataloader)
         print(f"\nEpoch {epoch+1} — Avg Loss: {avg_loss:.4f}")
 
-        # Early stopping logic
+        # Early stopping + checkpointing
         if avg_loss < best_loss:
             best_loss = avg_loss
             wait = 0
-
-            # Save checkpoint on improvement
             torch.save(model.state_dict(), ckpt_path)
-            print(f"✓ Checkpoint saved at {ckpt_path}")
-
+            print(f"Saved improved checkpoint → {ckpt_path}")
         else:
             wait += 1
             print(f"No improvement. Patience {wait}/{patience}")
-
             if wait >= patience:
-                print("⛔ Early stopping triggered.")
+                print("Early stopping triggered.")
                 break
 
     print("Training finished.")
     return model
-

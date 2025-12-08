@@ -18,5 +18,25 @@
     {
         "image_path": "./multimodal-dataset/images/img5.jpg",
         "caption": "An image with dominant color RGB (255, 0, 255)."
-    }
+    },
+    {
+		"image_path": "./multimodal-dataset/images/img1.png",
+		"caption": "A cute robot holding a balloon"
+	},
+	{
+		"image_path": "./multimodal-dataset/images/img2.png",
+		"caption": "A scenic mountain view with sunrise"
+	},
+	{
+		"image_path": "./multimodal-dataset/images/img3.png",
+		"caption": "A cozy reading nook with a cat"
+	},
+	{
+		"image_path": "./multimodal-dataset/images/img4.png",
+		"caption": "A futuristic city skyline at night"
+	},
+	{
+		"image_path": "./multimodal-dataset/images/img5.png",
+		"caption": "A colorful hot air balloon festival"
+	}
 ]
