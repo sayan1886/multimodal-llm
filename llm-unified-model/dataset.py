@@ -1,39 +1,38 @@
-# llm-unified-model/dataset.py
+# llm-adapter/dataset.py
 
 import os
-from PIL import Image
 from typing import List, Dict
-
+from PIL import Image
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-
 from transformers import CLIPFeatureExtractor, GPT2TokenizerFast
-
 
 class UnifiedImageTextDataset(Dataset):
     """
     Dataset for the unified multimodal LLM.
-    Expects a list of:
+    Expects a list of dictionaries:
         {"image_path": "...", "caption": "..."}
     """
 
-    def __init__(self, examples: List[Dict], image_size=224, max_length=64):
+    def __init__(self, examples: List[Dict], image_size: int = 224, max_length: int = 64):
         self.examples = examples
         self.image_size = image_size
         self.max_length = max_length
 
-        self.feature_extractor = CLIPFeatureExtractor.from_pretrained(
-            "openai/clip-vit-base-patch32"
-        )
+        # CLIP feature extractor (optional, can use for pixel_values preprocessing)
+        self.feature_extractor = CLIPFeatureExtractor.from_pretrained("openai/clip-vit-base-patch32")
 
+        # GPT2 tokenizer
         self.tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.add_special_tokens({"pad_token": "[PAD]"})
 
-        self.transforms = transforms.Compose([
+        # Image transform
+        self.transform = transforms.Compose([
             transforms.Resize((image_size, image_size)),
             transforms.CenterCrop((image_size, image_size)),
+            transforms.ToTensor(),  # scales 0-255 to 0-1
         ])
 
     def __len__(self):
@@ -41,23 +40,27 @@ class UnifiedImageTextDataset(Dataset):
 
     def __getitem__(self, idx):
         ex = self.examples[idx]
-
-        image = Image.open(ex["image_path"]).convert("RGB")
-        image = self.transforms(image)
-        clip_inputs = self.feature_extractor(images=image, return_tensors="pt")
-        pixel_values = clip_inputs["pixel_values"].squeeze(0)
-
+        img_path = ex["image_path"]
         caption = ex["caption"]
-        encoded = self.tokenizer(
+
+        # Load and transform image
+        image = Image.open(img_path).convert("RGB")
+        pixel_values = self.transform(image)  # shape: (3, H, W)
+
+        # Tokenize caption
+        tokenized = self.tokenizer(
             caption,
-            max_length=self.max_length,
             truncation=True,
             padding="max_length",
+            max_length=self.max_length,
             return_tensors="pt"
         )
+        input_ids = tokenized["input_ids"].squeeze(0)
+        attention_mask = tokenized["attention_mask"].squeeze(0)
 
         return {
             "pixel_values": pixel_values,
-            "input_ids": encoded["input_ids"].squeeze(0),
-            "attention_mask": encoded["attention_mask"].squeeze(0),
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "labels": input_ids.clone()
         }

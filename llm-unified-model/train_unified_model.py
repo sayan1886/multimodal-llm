@@ -3,7 +3,7 @@
 import json
 import torch
 from torch.utils.data import DataLoader
-from transformers import AdamW
+from torch.optim import AdamW
 from tqdm import tqdm
 
 from dataset import UnifiedImageTextDataset
@@ -49,6 +49,8 @@ def train_unified(
 
     # Model
     model = UnifiedMultimodalLM(prefix_tokens=16).to(device)
+    # Important: resize GPT2 embeddings if tokenizer added new tokens
+    model.lm.resize_token_embeddings(len(dataset.tokenizer))
     optimizer = AdamW(model.parameters(), lr=lr)
 
     model.train()
