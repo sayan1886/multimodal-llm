@@ -1,6 +1,7 @@
 # llm-unified-model/train_unified_model.py
 
 import json
+import os
 import torch
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
@@ -38,23 +39,57 @@ def train_unified(
     batch_size=4,
     num_epochs=5,
     lr=5e-5,
-    device=None
+    device=None,
+    skip_train=True       # <==== NEW PARAM
 ):
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
+    # -------------------------
     # Load dataset
+    # -------------------------
     samples = load_pairs(json_path)
     dataset = UnifiedImageTextDataset(samples)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn=collate)
 
-    # Model
-    model = UnifiedMultimodalLM(prefix_tokens=16).to(device)
-    # Important: resize GPT2 embeddings if tokenizer added new tokens
-    model.lm.resize_token_embeddings(len(dataset.tokenizer))
-    optimizer = AdamW(model.parameters(), lr=lr)
+    # -------------------------
+    # Load or initialize model
+    # -------------------------
+    ckpt_path = "model_checkpoints/unified_model.pt"
 
+    model = UnifiedMultimodalLM(prefix_tokens=16)
+
+    # Must happen BEFORE loading checkpoint
+    model.lm.resize_token_embeddings(len(dataset.tokenizer))
+
+    # Load checkpoint if exists
+    if os.path.exists(ckpt_path):
+        print(f"Checkpoint detected → {ckpt_path}")
+        ckpt = torch.load(ckpt_path, map_location="cpu")
+        model.load_state_dict(ckpt, strict=False)
+
+        if skip_train:
+            print("SKIP_TRAIN=True → Skipping training and returning loaded model.")
+            model = model.to(device)
+            model.eval()
+            return model
+        else:
+            print("Resuming training...")
+    else:
+        print("No checkpoint found → Initializing new model")
+
+    # -------------------------
+    # If training is disabled and no ckpt exists
+    # -------------------------
+    if skip_train and not os.path.exists(ckpt_path):
+        raise RuntimeError("SKIP_TRAIN=True but no checkpoint exists to load.")
+
+    model = model.to(device)
+    optimizer = AdamW(model.parameters(), lr=lr)
     model.train()
 
+    # -------------------------
+    # Training loop
+    # -------------------------
     for epoch in range(num_epochs):
         total_loss = 0.0
         pbar = tqdm(loader, desc=f"Epoch {epoch+1}/{num_epochs}")
@@ -73,6 +108,7 @@ def train_unified(
             )
 
             loss = out.loss
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -82,9 +118,14 @@ def train_unified(
 
         print(f"Epoch {epoch+1} Avg Loss: {total_loss / len(loader):.4f}")
 
+    # -------------------------
     # Save model
-    torch.save(model.state_dict(), "model_checkpoints/unified_model.pt")
-    print("Saved unified model → model_checkpoints/unified_model.pt")
+    # -------------------------
+    os.makedirs("model_checkpoints", exist_ok=True)
+    torch.save(model.state_dict(), ckpt_path)
+    print(f"Saved unified model → {ckpt_path}")
+
+    return model
 
 
 if __name__ == "__main__":

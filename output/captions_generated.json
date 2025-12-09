@@ -1,42 +1,42 @@
 [
     {
         "image_path": "./multimodal-dataset/images/img1.jpg",
-        "caption": "A man is jumping off a cliff into a lake ."
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img2.jpg",
-        "caption": "A man is climbing a mountain ."
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img3.jpg",
-        "caption": "A man is climbing a mountain ."
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img4.jpg",
-        "caption": "A man is climbing a mountain ."
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img5.jpg",
-        "caption": "A man is jumping off a cliff into a lake ."
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img1.png",
-        "caption": "A man is in a"
+        "caption": "A man in a red shirt is standing on a street with a sign ."
     },
     {
         "image_path": "./multimodal-dataset/images/img2.png",
-        "caption": ""
+        "caption": "A man in a red shirt is standing on a rock with a bird in his mouth ."
     },
     {
         "image_path": "./multimodal-dataset/images/img3.png",
-        "caption": ""
+        "caption": "A man in a red shirt is standing on a street with a sign ."
     },
     {
         "image_path": "./multimodal-dataset/images/img4.png",
-        "caption": "A man is standing in a park with a large red and white dog ."
+        "caption": "A man in a red shirt is standing on a street with a sign ."
     },
     {
         "image_path": "./multimodal-dataset/images/img5.png",
-        "caption": ""
+        "caption": "A man in a red shirt is standing on a hill ."
     }
 ]

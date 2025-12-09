@@ -18,10 +18,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 OUTPUT_DIR = Path("./model_checkpoints")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
-BATCH_SIZE = 4
-NUM_EPOCHS = 5
-LR = 5e-5
-MAX_EXAMPLES = 5  # for demo
+BATCH_SIZE = 8
+NUM_EPOCHS = 30
+LR = 1e-5
+MAX_EXAMPLES = 10  # for demo
 
 # ----------------------------
 # Load dataset

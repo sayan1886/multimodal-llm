@@ -1,207 +1,75 @@
-# Multimodal LLM Project
+# Multimodal LLM — Project README
 
-Implementing Three Architectures: Tools + Adapter + Unified Model
+This repository contains reference code for three multimodal approaches and utility scripts to run demos and manage datasets.
 
-This project contains three complete multi-modal LLM systems
+Repository layout (high level)
+- `llm-tools/` — agent, Whisper ASR, image backends (Flux, Stable Diffusion adapters, Nano-Banana, DeepInfra, Freepik).
+- `llm-adapter/` — CLIP encoder + Adapter MLP + GPT-2 decoder implementation and training utilities.
+- `llm-unified-model/` — unified-prefix multimodal model training and demo runner.
+- `multimodal-dataset/` — small example dataset included for quick tests.
+- `scripts/` — dataset helper scripts (downsampling for generic sets and Flickr8k CSV).
 
-## Project Structure
+Quick setup
+1. Create a Python virtual environment and activate it.
+2. Install dependencies:
 
-```mathematica
-tree ./
-./
-├── LICENSE
-├── README.md
-├── llm-adapter
-│   ├── __init__.py
-│   ├── adapter.py
-│   ├── dataset.py
-│   └── train_adapter.py
-├── llm-tools
-│   ├── __init__.py
-│   ├── agent.py
-│   ├── flux.py
-│   ├── run_agent.py
-│   └── whisper.py
-├── llm-unified-model
-│   ├── __init__.py
-│   ├── dataset.py
-│   ├── train_unified_model.py
-│   └── unified_model.py
-├── multimodal_dataset
-│   ├── captions.json
-│   ├── images
-│   │   ├── img1.jpg
-│   │   ├── img2.jpg
-│   │   ├── img3.jpg
-│   │   ├── img4.jpg
-│   │   └── img5.jpg
-│   └── sample_audio.wav
-└── requirements.txt
-
-6 directories, 23 files
+```bash
+pip install -r requirements.txt
 ```
 
-## Dataset
-
-A tiny dataset is added for quick testing of all modules works offline, lightweight, 5 images + JSON + audio.
-
-## Module 1 — LLM + Tools (Whisper + Flux)
-
-LLM acts as an **agent** that decides when to call external tools
-
-- **Whisper** → Speech-to-text
-- **Flux** → Image generation
-- **LLM** → fallback text reasoning
-
-### Architecture LLM + Tools
-
-```mathematica
-User Input → LLM → (Tool Decision)
-              ↳ Whisper (if audio request)
-              ↳ Flux (if image generation request)
-              ↳ LLM direct answer (else)
-→ Final Output to User
-```
-
-Code Located In - `./llm-tools/`
-
-## Module 2 — LLM + Adapter (Encoder → Adapter → Decoder)
-
-This module uses a **vision encoder** + **adapter MLP** + **decoder LLM**
-
-- **Image** → CLIP Vision Encoder
-- **Visual Embedding** → Adapter MLP
-- **Token Embeddings** → GPT-2 LLM Decoder
-
-### Architecture LLM + Adapter
-
-```mathematica
-Image → Vision Encoder → Adapter → LLM → Text
-```
-
-Code Located In - `./llm-adapter/`
-
-## Module 3 — Unified Multimodal Model
-
-This module uses **prefix token** fusion
-
-- Image encoded to a small number of pseudo-tokens
-- Pseudo-tokens concatenated with text embeddings
-- Passed into the LLM for multimodal reasoning
-
-### Architecture Unified Multimodal Model
-
-```mathematica
-Image → Vision Encoder → Prefix Tokens  
-Text → Tokenizer  
-Concat → LLM → Output
-```
-
-Code Located In - `./llm-unified-model/`
-
-## Installation
-
-`pip install -r requirements.txt`
-
-## Requirements
-
-```python
-torch
-transformers
-datasets
-tqdm
-Pillow
-requests
-soundfile
-numpy
-```
-
-## Running Modules
-
-- Run Module 1 (LLM + Tools) `python llm-tools/run_agent.py`
-- Run Module 2 (Adapter Fusion) `python llm-adapter/run_adapter.py`
-- Run Module 3 (Unified Model) `python llm-unified-model/run_unified_model.py`
-
-Environment variables (image/backends)
-
-- `IMAGE_BACKEND`: choose which image backend the agent will call. Supported values:
-    - `flux` (default) — calls `llm-tools/flux.py` which uses OpenAI Images endpoint (requires `FLUX_API_KEY`).
-    - `stable-diffusion` / `sd` — uses a local placeholder image generator in `llm-tools/stable-diffusion.py`.
-    - `nano-banana` / `nano` — calls `llm-tools/nano_banana.py` which can POST to a configured endpoint or use a placeholder.
-- `FLUX_API_KEY`: Bearer API key for the Flux/OpenAI images endpoint (used by `llm-tools/flux.py`).
-- `FLUX_MODEL`: optional; override the default image model used by Flux (defaults to `gpt-image-1`).
-- `NANO_BANANA_ENDPOINT`: (optional) URL for a Nano-Banana image-generation endpoint that accepts `{"prompt":...}` and returns a base64 image.
-- `NANO_BANANA_API_KEY`: (optional) Bearer token for the Nano-Banana endpoint.
-
-Output
-
-- Generated images (placeholder or downloaded) are saved to the project `output/` directory by default, e.g. `./output/sd_image.png` or `./output/nano_image.png`.
-
-Examples
-
-- Run the demo using the Nano-Banana placeholder backend:
-    `IMAGE_BACKEND=nano-banana python llm-tools/run_agent.py`
-- Run the demo using the stable-diffusion placeholder backend:
-    `IMAGE_BACKEND=stable-diffusion python llm-tools/run_agent.py`
-- Default (Flux) backend; ensure `FLUX_API_KEY` is exported first:
+Running the demos
+- LLM + Tools agent (ASR + image backend + LLM):
     ```bash
-    export FLUX_API_KEY="sk-..."
     python llm-tools/run_agent.py
     ```
+    - The agent uses `Whisper` for ASR and an image backend selected via `IMAGE_BACKEND`.
 
-Dataset downsampling utility
+- Adapter training (vision → adapter → LLM):
+    ```bash
+    python llm-adapter/train_adapter.py
+    ```
 
-If you have a large image dataset and want a quick subset for experiments, use the included script `scripts/downsample_dataset.py`.
+- Unified model training + demo:
+    ```bash
+    python llm-unified-model/run_unified_model.py
+    ```
 
-Example: create a 1000-image subset using symlinks (fast):
+Environment variables
+- `MM_DATASET`: dataset path or known name (`flickr8k`, `flickr8k-subset`). If set to a directory containing `captions.txt`, the runners will use that folder.
+- `IMAGE_BACKEND`: which image backend to use (default `flux`). Supported backends: `flux`, `stable-diffusion`/`sd`, `nano-banana`, `deepinfra`, `freepik`.
 
-```bash
-python scripts/downsample_dataset.py --src multimodal-dataset --dst multimodal-dataset-subset --num 1000 --symlink
-```
+Common backend env vars (examples)
+- `FLUX_API_KEY`, `FLUX_MODEL`
+- `STABILITY_API_KEY`, `HF_API_KEY`, `A1111_URL`, `REPLICATE_API_TOKEN`
+- `NANO_BANANA_API_KEY`, `NANO_BANANA_MODEL`
+- `DEEP_INFRA_API_KEY`, `FREEPIK_API_KEY`
 
-The script will copy or symlink selected images into `--dst/images/` and will filter `captions.json` if present.
+Dataset helpers
+- Generic downsample (JSON/images):
+    ```bash
+    python scripts/downsample_dataset.py --src <src> --dst <dst> --num <N> --symlink
+    ```
+- Flickr8k CSV downsample (preserves all captions for sampled images):
+    ```bash
+    python scripts/downsample_flickr8k.py --src multimodal-dataset/flickr8k \
+            --dst multimodal-dataset/flickr8k-subset --num 1000 --symlink
+    ```
 
-Flickr8k-specific downsampling
+Outputs and checkpoints
+- Generated images are written to `./output/` by the image backend modules.
+- Training checkpoints are written to module-specific `model_checkpoints/` folders.
 
-If you're working with the Flickr8k CSV-style captions file, there's a convenience script that samples by unique image id and preserves all caption lines for each selected image:
+Security / best practices
+- Never commit API keys or secrets. Use a repo-root `.env` (ignored by `.gitignore`) or export keys in your shell.
+- Use `.env.example` as a template and copy it to `.env` with real values locally.
 
-```bash
-python scripts/downsample_flickr8k.py --src multimodal-dataset/flickr8k \
-    --dst multimodal-dataset/flickr8k-subset --num 1000 --symlink
-```
+What's next (optional)
+- I can remove any real API keys from the repo `.env` and replace them with placeholders, create more targeted run scripts for experiments, or run a quick smoke test of a demo (note: training runs are long).
 
-This will create `multimodal-dataset/flickr8k-subset/images/` (symlinks by default) and `multimodal-dataset/flickr8k-subset/captions.txt` containing only caption lines for the selected images.
+---
 
-Environment and `.env`
-
-You can point the adapter/demo scripts to a different dataset using the `MM_DATASET` environment variable. It accepts either:
-- a path to a dataset directory containing `captions.txt` (e.g. `./multimodal-dataset/flickr8k-subset`), or
-- a known name such as `flickr8k` or `flickr8k-subset` (the repo-level demo will map these to the appropriate folder).
-
-To make this persistent for your shell session, create a repo-root `.env` file with a single line (do not commit secrets):
-
-```bash
-# in the repo root
-echo "MM_DATASET=multimodal-dataset/flickr8k-subset" > .env
-```
-
-The code includes a tiny `.env` loader (no external dependencies) that will read `MM_DATASET` from that file at runtime.
-
-Security note — DO NOT COMMIT SECRETS
-
-The repository's `.gitignore` already ignores `.env`. Keep this pattern: never commit API keys or secrets into the repo. Instead:
-- export keys in your shell (e.g. `export FLUX_API_KEY=...`) or
-- store them locally in `.env` and ensure `.env` stays out of version control.
-
-## Examples Folder
-
-Contains
-
-```text
-example images
-audio sample for whisper
-```
-
-## License
-
-MIT License — free for academic submission.
+If you'd like, I can now (choose an action):
+- run a smoke demo of the agent (short run),
+- remove secrets from `.env` and replace with `.env.example` placeholders,
+- or further expand README with detailed API examples for each image backend.
+    `IMAGE_BACKEND=stable-diffusion python llm-tools/run_agent.py`
