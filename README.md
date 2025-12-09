@@ -67,9 +67,3 @@ What's next (optional)
 - I can remove any real API keys from the repo `.env` and replace them with placeholders, create more targeted run scripts for experiments, or run a quick smoke test of a demo (note: training runs are long).
 
 ---
-
-If you'd like, I can now (choose an action):
-- run a smoke demo of the agent (short run),
-- remove secrets from `.env` and replace with `.env.example` placeholders,
-- or further expand README with detailed API examples for each image backend.
-    `IMAGE_BACKEND=stable-diffusion python llm-tools/run_agent.py`
